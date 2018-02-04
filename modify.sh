@@ -3,7 +3,11 @@
 
 #===================get input ============
 
-echo "Please input -cpu -ram -diskType -netType -count"
+if (($# < 5));then
+        echo -e "Usge: Please input --cpu --ram --diskType --netType --count.\n --diskType 1:limit 0:unlimit  \n --netType 1:limit 0: unlimit"
+         exit 1
+fi
+
 cpu=$1
 ram=$2
 diskType=$3
@@ -13,26 +17,44 @@ echo -e "Input configuration   \n cpu: $cpu,ram = $ram,diskType = $diskType,netT
 
 #==================modify hadoop============
 hadoop_path=$HADOOP_HOME
+hadoop_conf_path=$hadoop_path/etc/path
 echo "Hadoop Path is $hadoop_path"
 
 #-----------replace ram----------
 
-num1=`awk '/yarn.scheduler.maximum-allocation-mb/{print NR+1}' yarn-site.xml`
-sed -e "$num1 s/\d+/$ram/" yarn-site.xml
-
-num2=`awk '/yarn.nodemanager.resource.memory-mb/{print NR+1}' yarn-site.xml`
-sed -e "$num2 s/\d+/$ram/" yarn-site.xml
-
-#---------replace cpu------------
-
-num3=`awk '/yarn.scheduler.maximum-allocation-vcores/{print NR+1}' yarn-site.xml`
-sed -e "$num3 s/\d+/i/" yarn-site.xml
-
-num4=`awk '/yarn.nodemanager.resource.cpu-vcores/{print NR+1}' yarn-site.xml`
-sed -e "$num4 s/\d+/i/" yarn-site.xml
-
-
+cp yarn-site.xml $hadoop_path/etc/hadoop
+sed -i "s/ramvalue/$ram/g" $hadoop_conf_path/yarn-site.xml
+sed -i "s/cpuvalue/$cpu/g" $hadoop_conf_path/yarn-site.xml
+ 
 #===================== deploy yarn file==========
-scp yarn-site.xml slave1:`pwd`
+ 
+cd $hadoop_path/etc/hadoop/
+for((i=1;i<=$count;i++));
+do 
+scp yarn-site.xml slave$i:`pwd`
+done
 
-for 
+bash $hadoop_path/sbin/stop-all.sh
+sleep 10s
+#=====================modify slave==========================
+cat /dev/null > $hadoop_conf_path/slaves  
+for((i=1;i<=$count;i++));
+do 
+echo slave$i > $hadoop_conf_path/slaves
+done
+
+#limit IO and network
+
+bash unlimit_iops.sh
+if(($diskType==1));then
+	bash limit_disk_iops.sh
+fi
+
+if(($netType==1));then
+	bash limit_network_iops.sh
+fi
+
+
+
+# restart cluster
+bash $hadoop_path/sbin/start-all.sh
