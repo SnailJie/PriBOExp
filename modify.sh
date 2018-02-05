@@ -58,3 +58,4 @@ fi
 
 # restart cluster
 bash $hadoop_path/sbin/start-all.sh
+echo "Redeploy over"
