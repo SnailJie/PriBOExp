@@ -50,5 +50,9 @@
     <name>yarn.scheduler.minimum-allocation-vcores</name>
     <value>1</value>
   </property>
+  <property>  
+    <name>yarn.nodemanager.vmem-check-enabled</name>  
+    <value>false</value>  
+  </property> 
 </configuration>
 

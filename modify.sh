@@ -59,4 +59,5 @@ fi
 
 # restart cluster
 bash $hadoop_path/sbin/start-all.sh
+hadoop dfsadmin -safemode leave
 echo "Redeploy over"
